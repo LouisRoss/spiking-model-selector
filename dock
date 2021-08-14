@@ -1,0 +1,10 @@
+#!/bin/bash
+echo $(pwd)
+docker container run \
+-it \
+--rm \
+--name=spiking-model-selector \
+-v "$(pwd)":/app \
+-p 3002:3000 \
+louisross/spiking-model-selector:1.0 \
+bash
