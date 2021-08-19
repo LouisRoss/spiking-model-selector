@@ -1,0 +1,49 @@
+services:
+  control-connector:
+    container_name: control-connector
+    build: ../spiking-control-connector/
+    image: "louisross/spiking-model-control-connector:1.1"
+    ports:
+      - 5000:5000
+  persist-connector:
+    container_name: persist-connector
+    build: ../spiking-persist-connecter/
+    image: "louisross/spiking-model-persist-connector:1.0"
+    ports:
+      - 5001:5000
+    depends_on:
+      - model-persist
+  model-persist:
+    container_name: model-persist
+    build: ../spiking-model-persist/backend/
+    image: "louisross/spiking-model-persist-backend:1.0"
+    volumes:
+      - "../spiking-model-persist/h5:/data"
+    ports:
+      - 5002:5000
+  model-control:
+    container_name: model-control
+    build: ../spiking-model-control/spiking-model-control/
+    image: "louisross/spiking-model-control:1.0"
+    ports:
+      - 8081:3000
+    depends_on:
+      - control-connector
+      - persist-connector
+  model-visualizer:
+    container_name: model-visualizer
+    build: ../spiking-model-visualize/
+    image: "louisross/spiking-model-visualize:1.0"
+    ports:
+      - 8082:3000
+    depends_on:
+      - control-connector
+  model-selector:
+    container_name: model-selector
+    build: "./"
+    image: "louisross/spiking-model-selector:1.0"
+    ports:
+      - 8080:3000
+    depends_on:
+      - model-control
+      - model-visualizer
