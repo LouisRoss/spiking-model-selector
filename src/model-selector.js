@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Configuration } from "./configuration.js";
+import { Configuration } from "./configuration/configuration.js";
 import { Button } from 'react-bootstrap';
 import { ConnectDisconnectButton } from "./property-switch.js";
 import './App.css';
@@ -19,64 +19,74 @@ class ModelSelector extends Component {
     this.state = {
     };
     
-    this.communicationState = CommunicationState.INITIALIZE
+    this.communicationState = CommunicationState.INITIALIZE;
     this.restUrl = '';
     this.restBaseDomain = 'hdfgroup.org';
     this.modelInfo = new Map();
 
     this.ManageStates = this.ManageStates.bind(this);
     this.timerId = setInterval(this.ManageStates, 500);
+
+    this.configuration = Configuration.getInstance();
   }
   
   componentWillUnmount() {
     clearInterval(this.timerId);
   }
-  
-ManageStates() {
-  switch (this.communicationState) {
-    case CommunicationState.INITIALIZE:
-    case CommunicationState.GETDOMAINS1:
-      this.requestResponseFromConfiguredStore((data) => {
-        console.log(data);
-        if (data.hrefs) {
-          this.restUrl = data.hrefs.find((href) => { return href.rel === 'root'; }).href;
-          console.log(this.restUrl);
-          this.communicationState = CommunicationState.GETDOMAINS2;
+
+  ManageStates() {
+    switch (this.communicationState) {
+      case CommunicationState.INITIALIZE:
+        if (this.configuration) {
+          console.log(this.configuration);
+          this.communicationState = CommunicationState.GETDOMAINS1;
         } else {
-          this.communicationState = CommunicationState.IDLE;
+          this.configuration = Configuration.getInstance();
         }
-      });
-      break;
-      
-    case CommunicationState.GETDOMAINS2:
-      var init = {
-        method: 'GET',
-      };
-      this.requestResponseFromUrl(init, this.restUrl + '/links', (data) => {
-        console.log(data);
-        var modelList = document.getElementById("models");
-        while (modelList.length > 0) {
-          modelList.remove(modelList.length - 1);
-        }
-        this.modelInfo.clear();
-        
-        data.links.forEach((link) => {
-          console.log('  ' + link.title);
-          var modelEntry = document.createElement("option");
-          modelEntry.text = link.title;
-          modelList.add(modelEntry);
-          this.modelInfo.set(link.title, { name: link.title, url: link.target, h5domain: link.h5domain });
+        break;
+
+      case CommunicationState.GETDOMAINS1:
+        this.requestResponseFromConfiguredStore((data) => {
+          console.log(data);
+          if (data.hrefs) {
+            this.restUrl = data.hrefs.find((href) => { return href.rel === 'root'; }).href;
+            console.log(this.restUrl);
+            this.communicationState = CommunicationState.GETDOMAINS2;
+          } else {
+            this.communicationState = CommunicationState.IDLE;
+          }
         });
-        this.communicationState = CommunicationState.GOTDOMAINS;
-      });
-      break;
-      
-    case CommunicationState.GOTDOMAINS:
-    case CommunicationState.IDLE:
-    default:
-      break;
+        break;
+        
+      case CommunicationState.GETDOMAINS2:
+        var init = {
+          method: 'GET',
+        };
+        this.requestResponseFromUrl(init, this.restUrl + '/links', (data) => {
+          console.log(data);
+          var modelList = document.getElementById("models");
+          while (modelList.length > 0) {
+            modelList.remove(modelList.length - 1);
+          }
+          this.modelInfo.clear();
+          
+          data.links.forEach((link) => {
+            console.log('  ' + link.title);
+            var modelEntry = document.createElement("option");
+            modelEntry.text = link.title;
+            modelList.add(modelEntry);
+            this.modelInfo.set(link.title, { name: link.title, url: link.target, h5domain: link.h5domain });
+          });
+          this.communicationState = CommunicationState.GOTDOMAINS;
+        });
+        break;
+        
+      case CommunicationState.GOTDOMAINS:
+      case CommunicationState.IDLE:
+      default:
+        break;
+    }
   }
-}
             
             
   requestResponseFromConfiguredStore(callback) {
@@ -88,12 +98,12 @@ ManageStates() {
       console.log(`request: ${init.body}`)  
     }  
     
-    //const host = Configuration.persistenceUrl;
-    const port = Configuration.persistencePort;
+    const host = this.configuration.services.persistConnector.host;
+    const port = this.configuration.services.persistConnector.port;
     //const url = 'http://' + host + ':' + port + '/';
-    const protocol = window.location.protocol;
-    const host = window.location.hostname;
-    const url = protocol + '//' + host + ':' + port + '/';
+    //const protocol = window.location.protocol;
+    //const host = window.location.hostname;
+    const url = host + ':' + port + '/';
     console.log(`Requesting from: ${url}`);
     this.requestResponseFromUrl(init, url, callback);
   }
@@ -133,12 +143,13 @@ ManageStates() {
       method: 'PUT',
     };
               
-    //const host = Configuration.persistenceUrl;
-    const port = Configuration.persistencePort;
+    const host = this.configuration.services.persistConnector.host;
+    const port = this.configuration.services.persistConnector.port;
     //const url = 'http://' + host + ':' + port + '/?host=' + newmodel.value + '.' + this.restBaseDomain;
-    const protocol = window.location.protocol;
-    const host = window.location.hostname;
-    const url = protocol + '//' + host + ':' + port + '/?host=' + newmodel.value + '.' + this.restBaseDomain;
+    //const protocol = window.location.protocol;
+    //const host = window.location.hostname;
+
+    const url = host + ':' + port + '/?host=' + newmodel.value + '.' + this.restBaseDomain;
     console.log(`Requesting from: ${url}`);
     //const url = 'http://localhost:5001/?host=' + newmodel.value + '.' + this.restBaseDomain;
     
@@ -164,8 +175,8 @@ ManageStates() {
               <textarea name="status" id="status" cols="120" rows="5" readOnly></textarea>
             </div>
             <form>
-              <Button variant="btn outline-primary" onClick={() => window.open("http://192.168.1.3:3000/ControlPanel", '_blank')}>Control Panel</Button>
-              <Button variant="btn outline-primary" onClick={() => window.open("http://192.168.1.150:8080", '_blank')}>Monitor</Button>
+              <Button variant="btn outline-primary" onClick={() => window.open(this.configuration.services.modelControl.host + ':' + this.configuration.services.modelControl.port + '/ControlPanel', '_blank')}>Control Panel</Button>
+              <Button variant="btn outline-primary" onClick={() => window.open(this.configuration.services.modelVisualizer.host + ':' + this.configuration.services.modelVisualizer.port, '_blank')}>Monitor</Button>
             </form>
           </div>
 

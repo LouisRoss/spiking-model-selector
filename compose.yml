@@ -5,12 +5,16 @@ services:
     image: "louisross/spiking-model-control-connector:1.1"
     ports:
       - 5000:5000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/configuration"
   persist-connector:
     container_name: persist-connector
     build: ../spiking-persist-connecter/
     image: "louisross/spiking-model-persist-connector:1.0"
     ports:
       - 5001:5000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/configuration"
     depends_on:
       - model-persist
   model-persist:
@@ -19,6 +23,7 @@ services:
     image: "louisross/spiking-model-persist-backend:1.0"
     volumes:
       - "../spiking-model-persist/h5:/data"
+      - "../spiking-model-configuration/configuration/:/configuration"
     ports:
       - 5002:5000
   model-control:
@@ -27,6 +32,9 @@ services:
     image: "louisross/spiking-model-control:1.0"
     ports:
       - 8081:3000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/app/public/configuration"
+      - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
       - control-connector
       - persist-connector
@@ -36,6 +44,9 @@ services:
     image: "louisross/spiking-model-visualize:1.0"
     ports:
       - 8082:3000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/app/public/configuration"
+      - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
       - control-connector
   model-selector:
@@ -44,6 +55,9 @@ services:
     image: "louisross/spiking-model-selector:1.0"
     ports:
       - 8080:3000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/app/public/configuration"
+      - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
       - model-control
       - model-visualizer
