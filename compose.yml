@@ -49,15 +49,15 @@ services:
       - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
       - control-connector
-  model-selector:
-    container_name: model-selector
-    build: "./"
-    image: "louisross/spiking-model-selector:1.0"
-    ports:
-      - 8080:3000
-    volumes:
-      - "../spiking-model-configuration/configuration/:/app/public/configuration"
-      - "../spiking-model-configuration/src/:/app/src/configuration"
-    depends_on:
-      - model-control
-      - model-visualizer
+#  model-selector:
+#    container_name: model-selector
+#    build: "./"
+#    image: "louisross/spiking-model-selector:1.0"
+#    ports:
+#      - 8080:3000
+#    volumes:
+#      - "../spiking-model-configuration/configuration/:/app/public/configuration"
+#      - "../spiking-model-configuration/src/:/app/src/configuration"
+#    depends_on:
+#      - model-control
+#      - model-visualizer

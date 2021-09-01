@@ -3,8 +3,10 @@ echo $(pwd)
 docker container run \
 -it \
 --rm \
---name=spiking-model-selector \
+--name=model-selector \
 -v "$(pwd)":/app \
--p 3002:3000 \
+-v "$(pwd)"/../spiking-model-configuration/configuration/:/app/public/configuration \
+-v "$(pwd)"/../spiking-model-configuration/src/:/app/src/configuration \
+-p 8080:3000 \
 louisross/spiking-model-selector:1.0 \
 bash

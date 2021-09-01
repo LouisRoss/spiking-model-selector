@@ -6,11 +6,11 @@ import './App.css';
 
 
 const CommunicationState = {
-    INITIALIZE: "init",
-    GETDOMAINS1: "getdomains1",
-    GETDOMAINS2: "getdomains2",
-    GOTDOMAINS: "gotdomains",
-    IDLE: "idle"
+  INITIALIZE: "init",
+  GETDOMAINS: "getdomains",
+  GOTDOMAINS: "gotdomains",
+  POLLCOMPLETE: "pollcomplete",
+  IDLE: "idle"
 }
 
 class ModelSelector extends Component {
@@ -23,98 +23,121 @@ class ModelSelector extends Component {
     this.restUrl = '';
     this.restBaseDomain = 'hdfgroup.org';
     this.modelInfo = new Map();
-
+    
     this.ManageStates = this.ManageStates.bind(this);
     this.timerId = setInterval(this.ManageStates, 500);
-
+    
     this.configuration = Configuration.getInstance();
   }
-  
+
   componentWillUnmount() {
     clearInterval(this.timerId);
   }
-
+  
   ManageStates() {
     switch (this.communicationState) {
       case CommunicationState.INITIALIZE:
-        if (this.configuration) {
-          console.log(this.configuration);
-          this.communicationState = CommunicationState.GETDOMAINS1;
-        } else {
-          this.configuration = Configuration.getInstance();
-        }
-        break;
-
-      case CommunicationState.GETDOMAINS1:
-        this.requestResponseFromConfiguredStore((data) => {
-          console.log(data);
-          if (data.hrefs) {
-            this.restUrl = data.hrefs.find((href) => { return href.rel === 'root'; }).href;
-            console.log(this.restUrl);
-            this.communicationState = CommunicationState.GETDOMAINS2;
-          } else {
-            this.communicationState = CommunicationState.IDLE;
-          }
-        });
+        this.handleInitializeState();
         break;
         
-      case CommunicationState.GETDOMAINS2:
-        var init = {
-          method: 'GET',
-        };
-        this.requestResponseFromUrl(init, this.restUrl + '/links', (data) => {
-          console.log(data);
-          var modelList = document.getElementById("models");
-          while (modelList.length > 0) {
-            modelList.remove(modelList.length - 1);
-          }
-          this.modelInfo.clear();
-          
-          data.links.forEach((link) => {
-            console.log('  ' + link.title);
-            var modelEntry = document.createElement("option");
-            modelEntry.text = link.title;
-            modelList.add(modelEntry);
-            this.modelInfo.set(link.title, { name: link.title, url: link.target, h5domain: link.h5domain });
-          });
-          this.communicationState = CommunicationState.GOTDOMAINS;
-        });
+      case CommunicationState.GETDOMAINS:
+        this.handleGetDomainsState();
         break;
         
       case CommunicationState.GOTDOMAINS:
+        break;
+
+      case CommunicationState.POLLCOMPLETE:
       case CommunicationState.IDLE:
       default:
         break;
     }
   }
-            
-            
-  requestResponseFromConfiguredStore(callback) {
+    
+  handleInitializeState() {
+    if (this.configuration) {
+      console.log(this.configuration);
+      this.packagerHost = this.configuration.services.modelPackager.host;
+      this.packagerPort = this.configuration.services.modelPackager.port;
+      this.basePackagerUrl = this.packagerHost + ':' + this.packagerPort;
+      this.communicationState = CommunicationState.GETDOMAINS;
+    } else {
+      this.configuration = Configuration.getInstance();
+    }
+  }
+
+  handleGetDomainsState() {
     var init = {
       method: 'GET',
+      mode: 'cors' 
     };
-              
-    if (init.body) {
-      console.log(`request: ${init.body}`)  
-    }  
     
-    const host = this.configuration.services.persistConnector.host;
-    const port = this.configuration.services.persistConnector.port;
-    //const url = 'http://' + host + ':' + port + '/';
-    //const protocol = window.location.protocol;
-    //const host = window.location.hostname;
-    const url = host + ':' + port + '/';
-    console.log(`Requesting from: ${url}`);
-    this.requestResponseFromUrl(init, url, callback);
+    this.requestResponseFromUrl(init, '/models', data => {
+      var modelList = document.getElementById("models");
+      while (modelList.length > 0) {
+        modelList.remove(modelList.length - 1);
+      }
+      this.modelInfo.clear();
+      
+      console.log(data);
+      data.forEach(model => {
+        console.log('  ' + model);
+        var modelEntry = document.createElement("option");
+        modelEntry.text = model;
+        modelList.add(modelEntry);
+      });
+      this.communicationState = CommunicationState.GOTDOMAINS;
+    });
+  }
+            
+  handleSelectionClick = (event) => {
+    
+  }
+
+  createOrDelete(method, model) {
+    var init = {
+      method: method,
+      mode: 'cors' 
+    };
+    
+    const pollComplete = (link) => {
+      fetch(link, init)
+      .then(data => {
+        return data.json()
+      })
+      .then(response => {
+        if (response.completed) {
+          var messages = document.getElementById('messages');
+          messages.value += response.status + '\n';
+          this.communicationState = CommunicationState.GETDOMAINS;
+        } else {
+          init.method = 'GET'
+          setTimeout(pollComplete, 200, response.link);
+        }
+      });
+    }
+
+    console.log(`Requesting ${method} of model ${model}`);
+    pollComplete(this.basePackagerUrl + '/model/' + model);
+  }
+
+  handleDeletionClick = (event) => {
+    var model = document.getElementById("models").value;
+    this.createOrDelete('DELETE', model);
+  }
+
+  handleCreationClick = (event) => {
+    var newmodel = document.getElementById('newmodel').value;
+    this.createOrDelete('POST', newmodel);
   }
   
   requestResponseFromUrl(init, url, callback) {
     var messages = document.getElementById('messages');
-
-    fetch(url, init)
+    
+    fetch(this.basePackagerUrl + url, init)
     .then(res => {
       if (res.ok) {
-        return res.json();  
+        return res.json()
       } else {
         messages.value += "\nError response";  
       }  
@@ -129,33 +152,6 @@ class ModelSelector extends Component {
       var disconnectedResponse = {query:init.body, response:{result:'ok', status: { connected: false }}};
       callback(disconnectedResponse);
     });  
-
-  }
-
-  handleSelectionClick = (event) => {
-
-  }
-
-  handleCreationClick = (event) => {
-    var newmodel = document.getElementById('newmodel');
-
-    var init = {
-      method: 'PUT',
-    };
-              
-    const host = this.configuration.services.persistConnector.host;
-    const port = this.configuration.services.persistConnector.port;
-    //const url = 'http://' + host + ':' + port + '/?host=' + newmodel.value + '.' + this.restBaseDomain;
-    //const protocol = window.location.protocol;
-    //const host = window.location.hostname;
-
-    const url = host + ':' + port + '/?host=' + newmodel.value + '.' + this.restBaseDomain;
-    console.log(`Requesting from: ${url}`);
-    //const url = 'http://localhost:5001/?host=' + newmodel.value + '.' + this.restBaseDomain;
-    
-    this.requestResponseFromUrl(init, url, (data) => {
-      console.log(data);
-    });
   }
   
   render() {
@@ -165,6 +161,7 @@ class ModelSelector extends Component {
           <div id="connectionPanel">
             <select name="models" id="models"></select>
             <ConnectDisconnectButton value="Select" disabled={() => false} onClick={() => this.handleSelectionClick()}/>
+            <ConnectDisconnectButton value="Delete" disabled={() => false} onClick={(event) => this.handleDeletionClick(event)}/>
             <input id="newmodel" type="text"></input>
             <ConnectDisconnectButton value="Create" disabled={() => false} onClick={() => this.handleCreationClick()}/>
           </div>
