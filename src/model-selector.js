@@ -1,97 +1,64 @@
 import { Component } from 'react';
-import { Configuration } from "./configuration/configuration.js";
+import { Configuration } from './configuration/configuration.js';
 import { Button } from 'react-bootstrap';
-import { ConnectDisconnectButton } from "./property-switch.js";
+import { ConnectDisconnectButton } from './property-switch.js';
 import './App.css';
-
-
-const CommunicationState = {
-  INITIALIZE: "init",
-  GETDOMAINS: "getdomains",
-  GOTDOMAINS: "gotdomains",
-  POLLCOMPLETE: "pollcomplete",
-  IDLE: "idle"
-}
 
 class ModelSelector extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      templates: ['<none>'],
+      modeltemplates: ['<none>'],
+      models: ['<none>']
     };
+    this.templateCount = 0;   // Incremented to use as key in modeltemplates select element.
     
-    this.communicationState = CommunicationState.INITIALIZE;
-    this.restUrl = '';
-    this.restBaseDomain = 'hdfgroup.org';
-    this.modelInfo = new Map();
-    
-    this.ManageStates = this.ManageStates.bind(this);
-    this.timerId = setInterval(this.ManageStates, 500);
-    
-    this.configuration = Configuration.getInstance();
+    this.configuration = null;
+    this.selectedModel = '';
   }
 
-  componentWillUnmount() {
-    clearInterval(this.timerId);
-  }
-  
-  ManageStates() {
-    switch (this.communicationState) {
-      case CommunicationState.INITIALIZE:
+  componentDidMount() {
+    if (!this.configuration) {
+      Configuration.getInstance(configuration => {
+        this.configuration = configuration;
         this.handleInitializeState();
-        break;
-        
-      case CommunicationState.GETDOMAINS:
-        this.handleGetDomainsState();
-        break;
-        
-      case CommunicationState.GOTDOMAINS:
-        break;
-
-      case CommunicationState.POLLCOMPLETE:
-      case CommunicationState.IDLE:
-      default:
-        break;
-    }
-  }
-    
-  handleInitializeState() {
-    if (this.configuration) {
-      console.log(this.configuration);
-      this.packagerHost = this.configuration.services.modelPackager.host;
-      this.packagerPort = this.configuration.services.modelPackager.port;
-      this.basePackagerUrl = this.packagerHost + ':' + this.packagerPort;
-      this.communicationState = CommunicationState.GETDOMAINS;
-    } else {
-      this.configuration = Configuration.getInstance();
-    }
-  }
-
-  handleGetDomainsState() {
-    var init = {
-      method: 'GET',
-      mode: 'cors' 
-    };
-    
-    this.requestResponseFromUrl(init, '/models', data => {
-      var modelList = document.getElementById("models");
-      while (modelList.length > 0) {
-        modelList.remove(modelList.length - 1);
-      }
-      this.modelInfo.clear();
-      
-      console.log(data);
-      data.forEach(model => {
-        console.log('  ' + model);
-        var modelEntry = document.createElement("option");
-        modelEntry.text = model;
-        modelList.add(modelEntry);
       });
-      this.communicationState = CommunicationState.GOTDOMAINS;
+    } else {
+      this.handleInitializeState();
+    }
+  }
+
+  handleInitializeState() {
+    console.log(this.configuration);
+    this.packagerHost = this.configuration.services.modelPackager.host;
+    this.packagerPort = this.configuration.services.modelPackager.port;
+    this.basePackagerUrl = this.packagerHost + ':' + this.packagerPort;
+
+    this.fetchModels();
+  }
+
+  fetchModels() {
+    fetch(this.basePackagerUrl + '/models', { method: 'GET', mode: 'cors' })
+    .then(data => data.json())
+    .then(response => {
+      this.setState({models: [...response] });
     });
   }
-            
+
   handleSelectionClick = (event) => {
-    
+    fetch(this.basePackagerUrl + '/templates', { method: 'GET', mode: 'cors' })
+    .then(data => data.json())
+    .then(response => {
+      this.setState({templates: [...response] });
+    });
+
+    this.selectedModel = document.getElementById("models").value;
+    fetch(this.basePackagerUrl + '/model/' + this.selectedModel + '/templates', { method: 'GET', mode: 'cors' })
+    .then(data => data.json())
+    .then(response => {
+      this.setState({modeltemplates: response });
+    });
   }
 
   createOrDelete(method, model) {
@@ -102,14 +69,12 @@ class ModelSelector extends Component {
     
     const pollComplete = (link) => {
       fetch(link, init)
-      .then(data => {
-        return data.json()
-      })
+      .then(data => data.json())
       .then(response => {
         if (response.completed) {
           var messages = document.getElementById('messages');
           messages.value += response.status + '\n';
-          this.communicationState = CommunicationState.GETDOMAINS;
+          this.fetchModels();
         } else {
           init.method = 'GET'
           setTimeout(pollComplete, 200, response.link);
@@ -130,36 +95,66 @@ class ModelSelector extends Component {
     var newmodel = document.getElementById('newmodel').value;
     this.createOrDelete('POST', newmodel);
   }
-  
-  requestResponseFromUrl(init, url, callback) {
-    var messages = document.getElementById('messages');
-    
-    fetch(this.basePackagerUrl + url, init)
-    .then(res => {
-      if (res.ok) {
-        return res.json()
-      } else {
-        messages.value += "\nError response";  
-      }  
-    })  
-    .then(data => {
-      callback(data);  
-    })  
-    .catch(error => {
-      messages.value += `\nError ${error}`;  
-      console.log(`Error ${error}`);
-      
-      var disconnectedResponse = {query:init.body, response:{result:'ok', status: { connected: false }}};
-      callback(disconnectedResponse);
-    });  
+
+  handleAddTemplateClick = () => {
+    var templates = document.getElementById('templates');
+
+    this.setState({modeltemplates: [...this.state.modeltemplates, templates.value]})
   }
-  
+
+  handleRemoveTemplateClick = () => {
+    var modelTemplates = document.getElementById('modeltemplates');
+
+    const modelTemplateIndex = modelTemplates.selectedIndex;
+
+    this.state.modeltemplates.splice(modelTemplateIndex, 1);
+    this.setState({modeltemplates: [...this.state.modeltemplates]})
+  }
+
+  handleApplyClick = () => {
+    var init = {
+      method: 'PUT',
+      mode: 'cors',
+      headers: {
+        'Content-type': 'application/json'
+      },
+      body: JSON.stringify(this.state.modeltemplates)
+    };
+    
+    var messages = document.getElementById('messages');
+    const pollComplete = (link) => {
+      fetch(link, init)
+      .then(data => data.json())
+      .then(response => {
+        if (response.completed) {
+          response.results.forEach(result => messages.value += result + '\n');
+          messages.value += response.status + '\n';
+        } else {
+          init.method = 'GET';
+          init.body = null;
+          setTimeout(pollComplete, 200, response.link);
+        }
+
+        var stausbar = document.getElementById('status');
+        stausbar.value = response.status;
+      });
+    }
+
+    console.log(`PUTting package command for templates ${JSON.stringify(this.state.modeltemplates)}`);
+    pollComplete(this.basePackagerUrl + '/package/' + this.selectedModel);
+  }
+
   render() {
     return (
       <section className="fullpane">
         <div className="connectbar">
+          <div className="modelLabel">Models</div>
           <div id="connectionPanel">
-            <select name="models" id="models"></select>
+            <select name="models" id="models">
+              {this.state.models.map(model => (
+                <option key={model} value={model}>{model}</option>
+              ))}
+            </select>
             <ConnectDisconnectButton value="Select" disabled={() => false} onClick={() => this.handleSelectionClick()}/>
             <ConnectDisconnectButton value="Delete" disabled={() => false} onClick={(event) => this.handleDeletionClick(event)}/>
             <input id="newmodel" type="text"></input>
@@ -168,6 +163,24 @@ class ModelSelector extends Component {
 
           <div className="messagebar">
             <div className="messages">
+              <div className="templatesLabel">Templates</div>
+              <div className="templates">
+                <select className="templates" id="templates" size="10">
+                  {this.state.templates.map(element => (
+                    <option key={element} value={element}>{element}</option>
+                  ))}
+                </select>
+                <div className="template-arrows">
+                  <Button variant="btn outline-primary" onClick={() => this.handleAddTemplateClick()}>&gt;</Button>
+                  <Button variant="btn outline-primary" onClick={() => this.handleRemoveTemplateClick()}>&lt;</Button>
+                </div>
+                <select className="templates" id="modeltemplates" size="10">
+                  {this.state.modeltemplates.map(element => (
+                    <option key={this.templateCount++} value={element}>{element}</option>
+                  ))}
+                </select>
+                <ConnectDisconnectButton value="Apply" disabled={() => false} onClick={() => this.handleApplyClick()}/>
+              </div>
               <textarea name="messages" id="messages" cols="120" rows="15" readOnly></textarea>
               <textarea name="status" id="status" cols="120" rows="5" readOnly></textarea>
             </div>
