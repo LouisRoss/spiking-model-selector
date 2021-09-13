@@ -47,9 +47,12 @@ class ModelSelector extends Component {
   }
 
   handleSelectionClick = (event) => {
+    var messages = document.getElementById('messages');
+
     fetch(this.basePackagerUrl + '/templates', { method: 'GET', mode: 'cors' })
     .then(data => data.json())
     .then(response => {
+      messages.value += 'Retrieved available templates\n'
       this.setState({templates: [...response] });
     });
 
@@ -57,6 +60,7 @@ class ModelSelector extends Component {
     fetch(this.basePackagerUrl + '/model/' + this.selectedModel + '/templates', { method: 'GET', mode: 'cors' })
     .then(data => data.json())
     .then(response => {
+      messages.value += `Retrieved configured templates for model ${this.selectedModel}\n`
       this.setState({modeltemplates: response });
     });
   }
@@ -135,8 +139,8 @@ class ModelSelector extends Component {
           setTimeout(pollComplete, 200, response.link);
         }
 
-        var stausbar = document.getElementById('status');
-        stausbar.value = response.status;
+        var statusbar = document.getElementById('status');
+        statusbar.value = response.status;
       });
     }
 
