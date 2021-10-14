@@ -1,12 +1,12 @@
 services:
-  control-connector:
-    container_name: control-connector
-    build: ../spiking-control-connector/
-    image: "louisross/spiking-model-control-connector:1.1"
-    ports:
-      - 5000:5000
-    volumes:
-      - "../spiking-model-configuration/configuration/:/configuration"
+#  control-connector:
+#    container_name: control-connector
+#    build: ../spiking-control-connector/
+#    image: "louisross/spiking-model-control-connector:1.1"
+#    ports:
+#      - 5000:5000
+#    volumes:
+#      - "../spiking-model-configuration/configuration/:/configuration"
   persist-connector:
     container_name: persist-connector
     build: ../spiking-persist-connecter/
@@ -36,28 +36,28 @@ services:
       - "../spiking-model-configuration/configuration/:/app/public/configuration"
       - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
-      - control-connector
+#      - control-connector
       - persist-connector
-  model-visualizer:
-    container_name: model-visualizer
-    build: ../spiking-model-visualize/
-    image: "louisross/spiking-model-visualize:1.0"
+  model-monitor:
+    container_name: model-monitor
+    build: ../spiking-model-monitor/
+    image: "louisross/spiking-model-monitor:1.0"
     ports:
       - 8082:3000
     volumes:
       - "../spiking-model-configuration/configuration/:/app/public/configuration"
       - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
-      - control-connector
-#  model-selector:
-#    container_name: model-selector
-#    build: "./"
-#    image: "louisross/spiking-model-selector:1.0"
-#    ports:
-#      - 8080:3000
-#    volumes:
-#      - "../spiking-model-configuration/configuration/:/app/public/configuration"
-#      - "../spiking-model-configuration/src/:/app/src/configuration"
-#    depends_on:
-#      - model-control
-#      - model-visualizer
+      - model-persist
+  model-selector:
+    container_name: model-selector
+    build: "./"
+    image: "louisross/spiking-model-selector:1.0"
+    ports:
+      - 8080:3000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/app/public/configuration"
+      - "../spiking-model-configuration/src/:/app/src/configuration"
+    depends_on:
+      - model-control
+      - model-monitor

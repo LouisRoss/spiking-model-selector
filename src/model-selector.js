@@ -190,7 +190,7 @@ class ModelSelector extends Component {
             </div>
             <form>
               <Button variant="btn outline-primary" onClick={() => window.open(this.configuration.services.modelControl.host + ':' + this.configuration.services.modelControl.port + '/ControlPanel', '_blank')}>Control Panel</Button>
-              <Button variant="btn outline-primary" onClick={() => window.open(this.configuration.services.modelVisualizer.host + ':' + this.configuration.services.modelVisualizer.port, '_blank')}>Monitor</Button>
+              <Button variant="btn outline-primary" onClick={() => window.open(this.configuration.services.modelMonitor.host + ':' + this.configuration.services.modelMonitor.port + '/' + this.selectedModel, '_blank')}>Monitor</Button>
             </form>
           </div>
 
