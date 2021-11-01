@@ -5,7 +5,7 @@ docker container run \
 --rm \
 --name=model-selector \
 -v "$(pwd)":/app \
--v "$(pwd)"/../spiking-model-configuration/configuration/:/app/public/configuration \
+-v "$(pwd)"/../spiking-model-configuration/configuration/:/app/src/configfiles \
 -v "$(pwd)"/../spiking-model-configuration/src/:/app/src/configuration \
 -p 8080:3000 \
 louisross/spiking-model-selector:1.0 \

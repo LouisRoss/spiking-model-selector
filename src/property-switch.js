@@ -33,8 +33,8 @@ class PropertySwitch extends Component {
     render() {
       return (
         <button 
-          id="connectButton" 
           className="connect-disconnect" 
+          id={this.props.ident}
           disabled={this.props.disabled()} 
           style={{opacity: (this.props.disabled()? 0.3 : 1.0)}}
           onClick={this.props.onClick}>
