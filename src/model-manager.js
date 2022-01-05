@@ -70,7 +70,7 @@ const ModelManager = ({onSelectClick}) => {
   }
 
   const handleControlButtonClick = () => {
-    window.open(configuration.services.modelControl.host + ':' + configuration.services.modelControl.port + '/ControlPanel', '_blank');
+    window.open(configuration.services.modelControl.host + ':' + configuration.services.modelControl.port + '/' + selectedModel, '_blank');
   }
 
   const handleMonitorButtonClick = () => {
