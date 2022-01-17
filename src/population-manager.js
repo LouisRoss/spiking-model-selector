@@ -24,9 +24,11 @@ const PopulationManager = ({selectedModel}) => {
         if (messages) {
           messages.value += `Retrieved configured populations for model '${selectedModel}'\n`
         }
-        response.templates.forEach((value, index) => value.id = index);
-        setTemplateId(response.templates.length);
-        setPopulationTemplates(response.templates);
+        if (response.templates && response.templates.length > 0) {
+          response.templates.forEach((value, index) => value.id = index);
+          setTemplateId(response.templates.length);
+          setPopulationTemplates(response.templates);
+        }
         evaluateUpDownDeleteButtonsDisabled();
         setDirty(false);
       });
