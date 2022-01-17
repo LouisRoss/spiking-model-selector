@@ -16,6 +16,15 @@ services:
       - 4000:4000
     volumes:
       - "../spiking-model-configuration/configuration/:/configuration"
+  realtime-shim:
+    container_name: realtime-shim
+    build: ../spiking-realtime-shim/
+    image: "louisross/spiking-realtime-shim:1.0"
+    ports:
+      - 4001:4000
+      - 5003:5000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/configuration"
   model-persist:
     container_name: model-persist
     build: ../spiking-model-persist/backend/
@@ -25,17 +34,29 @@ services:
       - "../spiking-model-configuration/configuration/:/configuration"
     ports:
       - 5002:5000
-#  model-control:
-#    container_name: model-control
-#    build: ../spiking-model-control/spiking-model-control/
-#    image: "louisross/spiking-model-control:1.0"
-#    ports:
-#      - 8081:3000
-#    volumes:
-#      - "../spiking-model-configuration/configuration/:/app/src/configfiles"
+  model-packager:
+    container_name: model-packager
+    build: ../spiking-model-packager/
+    image: "louisross/spiking-model-packager:1.0"
+    ports:
+      - 5004:5000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/configuration"
+      - "../spiking-model-configuration/configuration/utils/:/usr/src/app/utils"
+      - "/media/louis/Elements/spiking-model-templates/:/templates"
+    depends_on:
+      - model-persist
+  model-control:
+    container_name: model-control
+    build: ../spiking-model-control/
+    image: "louisross/spiking-model-control:1.0"
+    ports:
+      - 8081:3000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/app/src/configfiles"
 #      - "../spiking-model-configuration/src/:/app/src/configuration"
-#    depends_on:
-#      - control-connector
+    depends_on:
+      - control-connector
   model-monitor:
     container_name: model-monitor
     build: ../spiking-model-monitor/
@@ -46,16 +67,17 @@ services:
       - "../spiking-model-configuration/configuration/:/app/src/configfiles"
       - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
-      - model-persist
-#  model-selector:
-#    container_name: model-selector
-#    build: "./"
-#    image: "louisross/spiking-model-selector:1.0"
-#    ports:
-#      - 8080:3000
-#    volumes:
-#      - "../spiking-model-configuration/configuration/:/app/src/configfiles"
-#      - "../spiking-model-configuration/src/:/app/src/configuration"
-#    depends_on:
-#      - model-control
-#      - model-monitor
+      - model-packager
+      - realtime-shim
+  model-selector:
+    container_name: model-selector
+    build: "./"
+    image: "louisross/spiking-model-selector:1.0"
+    ports:
+      - 8080:3000
+    volumes:
+      - "../spiking-model-configuration/configuration/:/app/src/configfiles"
+      - "../spiking-model-configuration/src/:/app/src/configuration"
+    depends_on:
+      - model-control
+      - model-monitor
