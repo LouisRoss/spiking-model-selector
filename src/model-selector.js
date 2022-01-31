@@ -13,6 +13,7 @@ class ModelSelector extends Component {
   }
 
   handleSelectionClick = (selectedModel) => {
+    console.log(`Selection changed to ${selectedModel}`);
     this.setState({selectedModel: selectedModel});
   }
 
@@ -26,7 +27,7 @@ class ModelSelector extends Component {
 
           <div className="messagebar">
             <div className="messages">
-              <div className="templatesLabel">Select a Model -> Add, Modify, or Delete Population(Template)s -> Apply</div>
+              <div className="templatesLabel">Select a Model -&gt; Add, Modify, or Delete Population(Template)s -&gt; Apply</div>
               <div className="templates">
                 <ModelManager onSelectClick={this.handleSelectionClick} />
                 <PopulationManager selectedModel={this.state.selectedModel} />

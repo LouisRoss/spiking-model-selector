@@ -16,6 +16,7 @@ const PopulationManager = ({selectedModel}) => {
 
   // Reload the populations for the selected model when the selected model changes.
   useEffect(() => {
+    console.log(`Effect running because selectedModel changed to ${selectedModel}`);
     const messages = document.getElementById('messages');
     if (selectedModel && selectedModel !== '') {
       fetch(basePackagerUrl + '/model/' + selectedModel + '/population', { method: 'GET', mode: 'cors' })
@@ -29,11 +30,22 @@ const PopulationManager = ({selectedModel}) => {
           setTemplateId(response.templates.length);
           setPopulationTemplates(response.templates);
         }
+        else {
+          setTemplateId(0);
+          setPopulationTemplates([]);
+        }
+
         evaluateUpDownDeleteButtonsDisabled();
         setDirty(false);
       });
     }
-  }, [selectedModel]);
+    else {
+      setTemplateId(0);
+      setPopulationTemplates([]);
+      evaluateUpDownDeleteButtonsDisabled();
+      setDirty(false);
+  }
+}, [selectedModel]);
 
   // Reload all templates just once.
   useEffect(() => {

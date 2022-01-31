@@ -80,6 +80,8 @@ const ModelManager = ({onSelectClick}) => {
   const handleDeleteButtonClick = () => {
     const model = document.getElementById("modelselectlist").value;
     createOrDelete('DELETE', model);
+    setSelectedModel('');
+    onSelectClick('');
   }
 
 
