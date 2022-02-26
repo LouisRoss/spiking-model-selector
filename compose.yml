@@ -54,7 +54,7 @@ services:
       - 8081:3000
     volumes:
       - "../spiking-model-configuration/configuration/:/app/src/configfiles"
-#      - "../spiking-model-configuration/src/:/app/src/configuration"
+      - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
       - control-connector
   model-monitor:
