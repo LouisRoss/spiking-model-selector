@@ -43,7 +43,7 @@ services:
     volumes:
       - "../spiking-model-configuration/configuration/:/configuration"
       - "../spiking-model-configuration/configuration/utils/:/usr/src/app/utils"
-      - "/media/louis/Elements/spiking-model-templates/:/templates"
+      - "/media/elements/spiking-model-templates/:/templates"
     depends_on:
       - model-persist
   model-control:

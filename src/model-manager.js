@@ -101,8 +101,8 @@ const ModelManager = ({onSelectClick}) => {
             {models.map(model => (
               <option key={model} value={model}>{model}</option>
             ))}
-          </select>
-        </div>
+           </select>
+         </div>
       </div>
     </div>
   );
