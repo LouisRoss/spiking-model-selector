@@ -16,6 +16,7 @@ services:
       - 4000:4000
     volumes:
       - "../spiking-model-configuration/configuration/:/configuration"
+      - "/mnt/record:/record"
   realtime-shim:
     container_name: realtime-shim
     build: ../spiking-realtime-shim/
