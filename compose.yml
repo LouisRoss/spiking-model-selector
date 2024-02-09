@@ -31,7 +31,7 @@ services:
     build: ../spiking-model-persist/backend/
     image: "louisross/spiking-model-persist-backend:1.0"
     volumes:
-      - "../spiking-model-persist/h5:/data"
+      - "/mnt/h5:/data"
       - "../spiking-model-configuration/configuration/:/configuration"
     ports:
       - 5002:5000
@@ -44,7 +44,7 @@ services:
     volumes:
       - "../spiking-model-configuration/configuration/:/configuration"
       - "../spiking-model-configuration/configuration/utils/:/usr/src/app/utils"
-      - "/media/elements/spiking-model-templates/:/templates"
+      - "/mnt/templates/:/templates"
     depends_on:
       - model-persist
   model-control:
@@ -58,18 +58,6 @@ services:
       - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
       - control-connector
-  model-monitor:
-    container_name: model-monitor
-    build: ../spiking-model-monitor/
-    image: "louisross/spiking-model-monitor:1.0"
-    ports:
-      - 8082:3000
-    volumes:
-      - "../spiking-model-configuration/configuration/:/app/src/configfiles"
-      - "../spiking-model-configuration/src/:/app/src/configuration"
-    depends_on:
-      - model-packager
-      - realtime-shim
   model-selector:
     container_name: model-selector
     build: "./"
@@ -81,4 +69,3 @@ services:
       - "../spiking-model-configuration/src/:/app/src/configuration"
     depends_on:
       - model-control
-      - model-monitor
